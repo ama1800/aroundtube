@@ -1,126 +1,126 @@
-const userLatitude = document.getElementById('userLatitude')
-const userLongitude = document.getElementById('userLongitude')
-const apiKey = '153ea72d76919f8bca55c6f22c3585725108363c207ffe3a69ad9785'
-let cordonnes = { latitude: "", longitude: "" }
+// const curl = "https://api.ipgeolocation.io/ipgeo?apiKey=d0948b279bbb4c8c8b3317c2e566d737";
+const userLatitude = document.getElementById("userLatitude");
+const userLongitude = document.getElementById("userLongitude");
+const apiKey = "153ea72d76919f8bca55c6f22c3585725108363c207ffe3a69ad9785";
+let cordonnes = { latitude: "", longitude: "" };
 function isPromise(p) {
-    if (typeof p === 'object' && typeof p.then === 'function') {
-        return true;
-    }
-    return false;
+  if (typeof p === "object" && typeof p.then === "function") {
+    return true;
+  }
+  return false;
 }
-const gps = () => {
-    if (isPromise(geolocalisation)) {
-        geolocalisation()
-            .then(result => {
-                userLatitude.value = result.latitude
-                userLongitude.value = result.longitude
-                carte(result.latitude, result.longitude, 18, 20)
-            })
-            .catch(err => console.log(err))
-    } else {
-        fromIp()
-            .then(result => {
-                userLatitude.value = result.latitude
-                userLongitude.value = result.longitude
-                carte(result.latitude, result.longitude, 16, 60, result.flag)
-            })
-            .catch(err => console.log(err))
-    }
-}
-const carte = (latitude, longitude, zoom, radius, flag = "") => {
-    /** leaflet map */
-    // Variables globales
-    // On initialise la map et on la centre sur notre adresse
-    let map = L.map('map').setView([latitude, longitude], zoom); // coordonnés js.
-    // ajouter une icon sur l'adresse
-    const logo = L.icon({
-        iconUrl: './assets/img/location-sign.svg',
-        iconSize: [30, 30], // size of the icon
-    });
-    // On charge les "tuiles"
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        minZoom: 1,
-        maxZoom: 20,
-        name: 'tiles' // permettra de ne pas supprimer cette couche
-    }).addTo(map);
-
-    L.marker(
-        [latitude, longitude], { icon: logo }
-    ).addTo(map);
-    let circle = L.circle([latitude, longitude], {
-        color: 'red',
-        fillColor: '#f03',
-        fillOpacity: 0.5,
-        radius: radius
-    }).addTo(map);
-    L.popup()
-        .setLatLng([latitude, longitude])
-        .setContent(`${flag} Lat: ${latitude} + Long : ${longitude}`)
-        .openOn(map);
-}
-
-const geolocalisation = () => {
-    let p = new Promise((res, rej) => {
-        if (navigator.geolocalisation) {
-            navigator.geolocalisation.getCurrentPosition((position) => {
-                let latitude = position.coords.latitude;
-                let longitude = position.coords.longitude;
-                if (latitude && longitude) {
-                    res(cordonnes = { latitude: latitude, longitude: longitude })
-                }
-                else rej('No data ..!')
-            });
-        }
+const gps = async () => {
+  await geolocation
+    .then((result) => {
+      userLatitude.value = result.latitude;
+      userLongitude.value = result.longitude;
+      carte(result.latitude, result.longitude, 16, 60);
     })
-    return p
-}
-
-const fromIp = () => {
-    let p = new Promise((res, rej) => {
-        $.ajax({
-            url: `https://api.ipdata.co?api-key=${apiKey}`
-        }).done((data) => {
-            let latitude = data.latitude;
-            let longitude = data.longitude;
-            let flag = data.emoji_flag;
-            res(cordonnes = { latitude: latitude, longitude: longitude, flag: flag })
-        }).fail(err => {
-            rej(err);
-        });
+    .catch((err) => {
+      if (err.message) {
+        fromIp
+          .then((result) => {
+            userLatitude.value = result.latitude;
+            userLongitude.value = result.longitude;
+            carte(result.latitude, result.longitude, 16, 60, result.flag);
+          })
+          .catch((err) => console.log(err));
+      }
     });
-    return p
-}
-gps()
+};
+const carte = (latitude, longitude, zoom, radius, flag = "") => {
+  /** leaflet map */
+  // Variables globales
+  // On initialise la map et on la centre sur notre adresse
+  let map = L.map("map").setView([latitude, longitude], zoom); // coordonnés js.
+  // ajouter une icon sur l'adresse
+  const logo = L.icon({
+    iconUrl: "./assets/img/location-sign.svg",
+    iconSize: [30, 30], // size of the icon
+  });
+  // On charge les "tuiles"
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    minZoom: 1,
+    maxZoom: 20,
+    name: "tiles", // permettra de ne pas supprimer cette couche
+  }).addTo(map);
+
+  L.marker([latitude, longitude], { icon: logo }).addTo(map);
+  let circle = L.circle([latitude, longitude], {
+    color: "red",
+    fillColor: "#f03",
+    fillOpacity: 0.5,
+    radius: radius,
+  }).addTo(map);
+  L.popup()
+    .setLatLng([latitude, longitude])
+    .setContent(`${flag} Lat: ${latitude} + Long : ${longitude}`)
+    .openOn(map);
+};
+
+const geolocation = new Promise((res, rej) => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        let latitude = position.coords.latitude;
+        let longitude = position.coords.longitude;
+        res(
+          (cordonnes = { latitude: latitude, longitude: longitude })
+          );
+      },
+      err => rej(err)
+    );
+  }
+});
+
+const fromIp = new Promise((res, rej) => {
+  $.ajax({
+    url: `https://api.ipdata.co?api-key=${apiKey}`,
+  })
+    .done((data) => {
+      let latitude = data.latitude;
+      let longitude = data.longitude;
+      let flag = data.emoji_flag;
+      res(
+        (cordonnes = { latitude: latitude, longitude: longitude, flag: flag })
+      );
+    })
+    .fail(err => {
+      rej(err);
+    });
+});
+
+gps();
 
 const form = document.forms["searchGeolocation"];
-const container = document.getElementById('results');
+const container = document.getElementById("results");
 const searchGeoOnSubmit = () => {
-    form.addEventListener("submit", (e) => {
-        if (document.querySelector('ul.list-group')) document.querySelector('ul.list-group').remove()
-        e.preventDefault();
-        const search = document.getElementById('searchAddress').value
-        if (search.length < 10) return
-        const q = encodeURIComponent(search.split(' ').join('+'))
-        fetch('https://api-adresse.data.gouv.fr/search/?q=' + q,
-            { method: 'get' }
-        ).then(response => response.json()
-        ).then(results => {
-            const ul = document.createElement('ul')
-                ul.classList.add('list-group')
-            for(let result of results.features){
-                const li = document.createElement('li');
-                li.classList.add('list-group-item')
-                li.innerText = result.properties.label
-                ul.appendChild(li);
-                container.appendChild(ul)
-            }
-        })
-        .catch(err => {
-            console.log(err)
-        })
-    })
-}
-searchGeoOnSubmit()
+  form.addEventListener("submit", (e) => {
+    if (document.querySelector("ul.list-group"))
+      document.querySelector("ul.list-group").remove();
+    e.preventDefault();
+    const search = document.getElementById("searchAddress").value;
+    if (search.length < 10) return;
+    const q = encodeURIComponent(search.split(" ").join("+"));
+    fetch("https://api-adresse.data.gouv.fr/search/?q=" + q, { method: "get" })
+      .then((response) => response.json())
+      .then((results) => {
+        const ul = document.createElement("ul");
+        ul.classList.add("list-group");
+        for (let result of results.features) {
+          const li = document.createElement("li");
+          li.classList.add("list-group-item");
+          li.innerText = result.properties.label;
+          ul.appendChild(li);
+          container.appendChild(ul);
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  });
+};
+searchGeoOnSubmit();
 // const comUrl = "https://geo.api.gouv.fr/communes?codePostal="
 // const adressUrl = "https://api-adresse.data.gouv.fr/search/?q="//8+bd+du+port&postcode=44380
 // const format = "&format=json"
@@ -187,4 +187,3 @@ searchGeoOnSubmit()
 
 //     }
 // })
-
